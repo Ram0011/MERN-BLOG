@@ -15,7 +15,12 @@ const salt = bcrypt.genSaltSync(10);
 const secret = process.env.SECRET;
 
 //middlewares
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(
+  cors({
+    credentials: true,
+    origin: "https://bejewelled-speculoos-273f33.netlify.app/",
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 const uploadMiddleware = multer({ dest: "./uploads" });
