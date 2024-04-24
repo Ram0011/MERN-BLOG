@@ -18,8 +18,7 @@ const secret = process.env.SECRET;
 app.use(
   cors({
     credentials: true,
-    origin: "https://bejewelled-speculoos-273f33.netlify.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: "https://bejewelled-speculoos-273f33.netlify.app/",
   })
 );
 app.use(express.json());
