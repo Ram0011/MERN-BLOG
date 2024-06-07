@@ -21,6 +21,7 @@ app.use(
         origin: [
             "https://bejewelled-speculoos-273f33.netlify.app",
             "http://localhost:3000",
+            "https://my-blog-ram.vercel.app",
         ],
 
         methods: ["GET", "POST", "PUT", "DELETE"],
@@ -50,43 +51,58 @@ app.post("/register", async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const userDoc = await User.create({
-            username,
-            password: bcrypt.hashSync(password, salt),
-        });
-        res.json(userDoc);
-    } catch (error) {
-        if (
-            error.code === 11000 &&
-            error.keyPattern &&
-            error.keyPattern.username
-        ) {
-            // Duplicate username error
+        // check if username is already taken
+        const user = await User.findOne({ username });
+        if (user) {
             return res
-                .status(400)
+                .status(409)
                 .json({ error: "Username is already taken." });
+        } else {
+            // create new user
+            const userDoc = await User.create({
+                username,
+                password: bcrypt.hashSync(password, salt),
+            });
+            res.json(userDoc);
         }
-        // Other errors
-        console.log(error);
-        res.status(500).json({ error: "Internal Server Error" });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
     }
 });
 
 app.post("/login", async (req, res) => {
-    const { username, password } = req.body;
-    const userDoc = await User.findOne({ username });
-    const passOk = bcrypt.compareSync(password, userDoc.password);
-    if (passOk) {
-        //logged in
-        jwt.sign({ username, id: userDoc._id }, secret, {}, (err, token) => {
-            if (err) throw err;
-            res.cookie("token", token).json({
-                id: userDoc._id,
-                username,
-            });
-        });
-    } else {
-        res.status(400).json("Wrong Credentials");
+    try {
+        const { username, password } = req.body;
+        const userDoc = await User.findOne({ username });
+
+        if (!userDoc) {
+            return res.status(401).json({ err: "User not Registered" });
+        }
+
+        const passOk = bcrypt.compareSync(password, userDoc.password);
+
+        if (passOk) {
+            jwt.sign(
+                { username, id: userDoc._id },
+                secret,
+                {},
+                (err, token) => {
+                    if (err) {
+                        return res
+                            .status(500)
+                            .json({ err: "Token generation failed" });
+                    }
+                    res.cookie("token", token, { httpOnly: true }).json({
+                        id: userDoc._id,
+                        username,
+                    });
+                }
+            );
+        } else {
+            res.status(401).json({ err: "Wrong Password!" });
+        }
+    } catch (err) {
+        res.status(500).json({ err: "Internal Server Error" });
     }
 });
 
